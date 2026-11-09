@@ -1,0 +1,44 @@
+param(
+    [string]$Scenario = 'success',
+    [Parameter(ValueFromRemainingArguments)][string[]]$CliArgs
+)
+$ErrorActionPreference = 'Stop'
+[Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$outputIndex = [Array]::IndexOf($CliArgs, '--output-last-message')
+$lastPath = $CliArgs[$outputIndex + 1]
+$promptText = [Console]::In.ReadToEnd()
+[IO.File]::WriteAllText("$lastPath.stdin.txt", $promptText)
+$contextLine = @($promptText -split "`n" | Where-Object { $_.StartsWith('RUN_CONTEXT_JSON=') })[0]
+$context = $contextLine.Substring('RUN_CONTEXT_JSON='.Length) | ConvertFrom-Json
+if ($Scenario -eq 'timeout') { Start-Sleep -Seconds 30 }
+if ($Scenario -eq 'ui-demo') { Start-Sleep -Seconds 5 }
+if ($Scenario -eq 'exit-error') { [Console]::Error.WriteLine('fake transport failure'); exit 12 }
+$sessionId = if ($context.session_id) { $context.session_id } else { [guid]::NewGuid().ToString() }
+@{type='thread.started';thread_id=$sessionId} | ConvertTo-Json -Compress | Write-Output
+@{type='turn.started'} | ConvertTo-Json -Compress | Write-Output
+if ($Scenario -eq 'bad-json') { Set-Content -LiteralPath $lastPath -Value 'not JSON'; exit 0 }
+$status = if ($context.kind -eq 'review') { 'PASS' } else { 'DONE' }
+if ($context.kind -eq 'research' -and $Scenario -in @('blocked','approval')) {
+    $status = if ($Scenario -eq 'blocked') { 'BLOCKED' } else { 'NEEDS_APPROVAL' }
+}
+if ($context.kind -eq 'review' -and ($Scenario -eq 'always-revise' -or ($Scenario -eq 'revise-once' -and $context.revision -eq 1))) { $status = 'NEEDS_CHANGES' }
+if ($status -notin @('BLOCKED','NEEDS_APPROVAL')) {
+    if ($Scenario -eq 'final-mutate-draft' -and $context.kind -eq 'leader_finalize') { Add-Content -LiteralPath (Join-Path $context.team_root $context.draft_path) -Value 'post-review change' }
+    foreach ($relativePath in $context.expected_paths) {
+        $fullPath = Join-Path $context.team_root $relativePath
+        [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($fullPath)) | Out-Null
+        $body = "task_id: $($context.task_id)`nstatus: $status`n"
+        if ($Scenario -eq 'mixed-verdict' -and $context.kind -eq 'review' -and $relativePath -eq $context.artifact_path) { $body += "- 판정: NEEDS_CHANGES`n" }
+        if ($relativePath -eq $context.draft_path) { $body = "# 가상 요약`n- 완료 4건, 전체 6건, 완료율 66.7%`n" }
+        if ($context.kind -eq 'leader_finalize' -and $relativePath -eq $context.artifact_path) { $body += [IO.File]::ReadAllText((Join-Path $context.team_root $context.draft_path)) }
+        if ($Scenario -eq 'missing-artifact' -and $relativePath -eq $context.artifact_path) { continue }
+        [IO.File]::WriteAllText($fullPath, $body)
+    }
+}
+if ($Scenario -eq 'mutate-draft' -and $context.kind -eq 'review') { Add-Content -LiteralPath (Join-Path $context.team_root $context.draft_path) -Value 'unexpected edit' }
+$responseId = if ($Scenario -eq 'wrong-id') { 'another-run' } else { $context.task_id }
+$artifactPath = if ($Scenario -eq 'wrong-path') { '../escape.md' } else { $context.artifact_path }
+@{task_id=$responseId;status=$status;artifact_path=$artifactPath;summary='fake stage response'} | ConvertTo-Json -Compress | Set-Content -LiteralPath $lastPath -Encoding utf8
+if ($Scenario -eq 'unwritable-status') { [IO.File]::SetAttributes((Join-Path ([IO.Path]::GetDirectoryName($lastPath)) 'status.json'), [IO.FileAttributes]::ReadOnly) }
+@{type='turn.completed';usage=@{input_tokens=1;output_tokens=1}} | ConvertTo-Json -Compress | Write-Output

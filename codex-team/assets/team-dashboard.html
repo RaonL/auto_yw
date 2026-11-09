@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>팀 업무 진행 현황</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f7fa;--panel:#fff;--text:#17202d;--sub:#566273;--line:#dbe1e9;--active:#1859bc;--active-bg:#edf4ff;--ok:#14613e;--ok-bg:#edf8f1;--warn:#805500;--warn-bg:#fff7e2;--bad:#a32332;--bad-bg:#fff0f1;--radius:10px}
+@media(prefers-color-scheme:dark){:root{--bg:#111720;--panel:#19222f;--text:#eef2f7;--sub:#adbacb;--line:#354255;--active:#a3c7ff;--active-bg:#1b3353;--ok:#9ce0b9;--ok-bg:#193b2d;--warn:#f5d489;--warn-bg:#42351a;--bad:#ffb4bd;--bad-bg:#48232b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 "Segoe UI","Malgun Gothic",sans-serif}main{max-width:1160px;margin:0 auto;padding:28px 24px 32px}h1,h2,p{margin:0}h1{font-size:25px;line-height:1.3;letter-spacing:-.04em}h2{font-size:17px;font-weight:600}.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--sub);margin-bottom:6px}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.subtitle{margin-top:10px;color:var(--sub);overflow-wrap:anywhere;max-width:780px}.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}button,a{color:var(--active)}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:7px 12px;background:var(--panel);color:var(--text)}button:focus-visible,a:focus-visible{outline:3px solid var(--active);outline-offset:3px}.badge{display:inline-block;border-radius:5px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--sub)}.badge.active{background:var(--active-bg);color:var(--active)}.badge.ok{background:var(--ok-bg);color:var(--ok)}.badge.warn{background:var(--warn-bg);color:var(--warn)}.badge.bad{background:var(--bad-bg);color:var(--bad)}.summary{display:flex;gap:24px;flex-wrap:wrap;margin:22px 0 18px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.metric small{display:block;color:var(--sub);font-size:12px}.metric strong{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}.role-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}.role{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px;min-width:0}.role.is-active{border-color:var(--active);background:var(--active-bg)}.role-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.role h3{margin:0;font-size:16px}.role .assignment{min-height:48px;font-size:14px;overflow-wrap:anywhere}.role .meta{color:var(--sub);font-size:12px;margin-top:10px;overflow-wrap:anywhere}.section{margin-top:24px}.section-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:9px}.small{font-size:12px;color:var(--sub)}.table-wrap{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:hidden}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}th{font-weight:500;font-size:12px;color:var(--sub)}th:first-child{width:53%}th:nth-child(2){width:18%}th:nth-child(3){width:17%}th:last-child{width:12%}tr:last-child td{border-bottom:0}tr.current{background:var(--active-bg)}.step-label{font-weight:500}.step-time{color:var(--sub);font-size:12px;font-variant-numeric:tabular-nums}.duration{font-variant-numeric:tabular-nums;white-space:nowrap}.report{padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow-wrap:anywhere}.report p{margin-top:5px;font-size:14px}.notice{margin-top:14px;padding:10px 13px;background:var(--warn-bg);color:var(--warn);border-radius:7px;font-size:13px}.error{background:var(--bad-bg);color:var(--bad)}footer{margin-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--sub)}[hidden]{display:none!important}.empty{padding:18px;color:var(--sub)}a{text-underline-offset:3px}.run-id{font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+@media(max-width:820px){.role-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.top{flex-direction:column}.controls{justify-content:flex-start}.summary{gap:16px}}
+@media(max-width:460px){main{padding:20px 14px}h1{font-size:22px}.role-grid{grid-template-columns:1fr}.role .assignment{min-height:0}th,td{padding:10px 8px}th:first-child{width:44%}th:nth-child(2){width:23%}th:nth-child(3){width:21%}th:last-child{width:12%}.badge{padding:3px 6px}.duration{font-size:13px}.step-time{font-size:11px}.summary{gap:14px}}
+</style>
+</head>
+<body>
+<main>
+<header class="top"><div><p class="eyebrow">CODEX TEAM · 실행 기록</p><h1>팀 업무 진행 현황</h1><p id="task-preview" class="subtitle"></p></div><div class="controls"><span id="overall-status" class="badge"></span><button id="refresh-toggle" type="button" aria-pressed="true">자동 갱신 켜짐</button></div></header>
+<div class="summary"><div class="metric"><small>현재 단계</small><strong id="current-phase"></strong></div><div class="metric"><small>전체 경과</small><strong id="elapsed"></strong></div><div class="metric"><small>완료된 단계</small><strong id="completed-count"></strong></div><div class="metric"><small>마지막 상태 수신 · 한국시간</small><strong id="last-update"></strong></div></div>
+<div id="stale" class="notice" role="status" hidden></div><div id="run-error" class="notice error" hidden></div>
+<section aria-labelledby="roles-heading"><h2 id="roles-heading">역할별 상태</h2><div id="roles" class="role-grid"></div></section>
+<section class="section" aria-labelledby="records-heading"><div class="section-head"><h2 id="records-heading">실행 단계 기록</h2><span id="revision" class="small"></span></div><div class="table-wrap"><table><thead><tr><th scope="col">담당 · 수행 단계</th><th scope="col">상태</th><th scope="col">소요</th><th scope="col">산출물</th></tr></thead><tbody id="records"></tbody></table></div></section>
+<section class="section" aria-labelledby="report-heading"><div class="report"><h2 id="report-heading">최근 완료 보고</h2><p id="last-report"></p><p id="final-link"></p></div></section>
+<footer><span>상태 기록 5초 · 화면 갱신 3초 · 역할은 순차 실행됩니다.</span><span>작업 ID <span id="task-id" class="run-id"></span> · <a href="status.json" target="_blank" rel="noopener">원본 기록</a></span></footer>
+</main>
+<script id="team-state" type="application/json">__TEAM_STATE_JSON__</script>
+<script>
+'use strict';
+const state = JSON.parse(document.getElementById('team-state').textContent);
+const stages = Array.isArray(state.stages) ? state.stages : [];
+const running = state.status === 'RUNNING';
+const names = {leader:'팀장',researcher:'조사 담당',writer:'작성 담당',reviewer:'검수 담당'};
+const phases = {leader_plan:'요청 분석·계획·조사 지시',research:'자료 조사·근거 정리',leader_write:'조사 결과 확인·작성 지시',leader_revise:'검수 결과 확인·수정 지시',write:'결과물 작성·자체 확인',leader_review:'초안 확인·검수 지시',review:'출처·내용·요구사항 검수',leader_finalize:'검수 결과 확인·최종 취합'};
+const labels = {RUNNING:'진행 중',DONE:'단계 완료',PASS:'검수 PASS',COMPLETED:'전체 완료',BLOCKED:'자료·판단 필요',NEEDS_APPROVAL:'승인 필요',NEEDS_CHANGES:'수정 요청',FAILED:'실행 오류',CANCELLED:'중단'};
+const classes = {RUNNING:'active',DONE:'ok',PASS:'ok',COMPLETED:'ok',BLOCKED:'warn',NEEDS_APPROVAL:'warn',NEEDS_CHANGES:'warn',FAILED:'bad',CANCELLED:'warn'};
+const active = running ? [...stages].reverse().find(stage => stage.status === 'RUNNING') : null;
+function text(id,value){document.getElementById(id).textContent = value == null ? '' : String(value);}
+function badge(value,label){const node=document.createElement('span');node.className='badge '+(classes[value]||'');node.textContent=label||labels[value]||value;return node;}
+function time(value){if(!value)return '—';const date=new Date(value);return Number.isNaN(date.getTime())?'—':new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(date);}
+function duration(seconds){const value=Math.max(0,Math.floor(seconds||0));return value>=60?`${Math.floor(value/60)}분 ${String(value%60).padStart(2,'0')}초`:`${value}초`;}
+function fileLink(path,label){if(typeof path!=='string'||!/^(leader|researcher|writer|reviewer)\/(inbox|output)\/[^/\\]+\.md$/.test(path)||path.includes('..'))return null;const link=document.createElement('a');link.href='../../'+path.split('/').map(encodeURIComponent).join('/');link.textContent=label;link.target='_blank';link.rel='noopener';return link;}
+text('task-preview',state.task_preview||'기록된 업무의 역할별 상태를 표시합니다.');
+text('task-id',state.task_id);
+const overall=document.getElementById('overall-status');overall.className='badge '+(classes[state.status]||'');overall.textContent=labels[state.status]||state.status;
+text('current-phase',running?(active?phases[active.kind]||active.kind:'실행 준비 중'):(labels[state.status]||state.status));
+text('completed-count',`${stages.filter(stage=>stage.status==='DONE'||stage.status==='PASS').length}개`);
+text('last-update',time(state.updated_utc||state.started_utc));
+text('revision',`수정 버전 r${String(state.revision||1).padStart(2,'0')}`);
+text('last-report',state.message||'완료된 단계의 보고가 아직 없습니다.');
+const roleRoot=document.getElementById('roles');
+for(const role of ['leader','researcher','writer','reviewer']){
+  const history=stages.filter(stage=>stage.role===role),latest=history[history.length-1],isActive=!!active&&active.role===role;
+  let roleStatus='WAITING',label='대기',assignment='앞 단계 결과를 기다립니다.';
+  if(isActive){roleStatus='RUNNING';label='진행 중';assignment=phases[active.kind]||active.kind;}
+  else if(latest){roleStatus=latest.status;label=labels[roleStatus]||roleStatus;assignment=phases[latest.kind]||latest.kind;
+    if(running&&role==='leader'){roleStatus='WAITING';label='결과 대기';assignment='담당자 결과를 받아 다음 단계로 넘깁니다.';}
+    else if(running&&['writer','reviewer'].includes(role)&&(latest.revision||1)<(state.revision||1)){roleStatus='WAITING';label='다음 버전 대기';assignment=role==='writer'?'수정 지시를 기다립니다.':'수정 결과의 재검수를 기다립니다.';}
+    else if(state.status==='COMPLETED'){label=role==='reviewer'?'검수 PASS':'완료';}
+  } else if(!running){label='미실행';assignment='이 실행에서 해당 역할은 호출되지 않았습니다.';}
+  const card=document.createElement('article');card.className='role'+(isActive?' is-active':'');card.dataset.role=role;
+  const head=document.createElement('div');head.className='role-head';const title=document.createElement('h3');title.textContent=names[role];head.append(title,badge(roleStatus,label));
+  const task=document.createElement('p');task.className='assignment';task.textContent=assignment;
+  const meta=document.createElement('p');meta.className='meta';const session=[...history].reverse().find(stage=>stage.session_id);meta.textContent=`호출 ${history.length}회`+(session?` · 세션 ${session.session_id.slice(0,8)}`:'');if(session)meta.title=session.session_id;
+  card.append(head,task,meta);roleRoot.append(card);
+}
+const recordRoot=document.getElementById('records');
+for(const stage of stages){
+  const row=document.createElement('tr');if(stage.status==='RUNNING')row.className='current';
+  const main=document.createElement('td'),label=document.createElement('div'),stamp=document.createElement('div');label.className='step-label';label.textContent=`${stage.number}. ${names[stage.role]||stage.role} · ${phases[stage.kind]||stage.kind}`;stamp.className='step-time';stamp.textContent=`${time(stage.started_utc)} → ${stage.finished_utc?time(stage.finished_utc):'진행 중'}`;main.append(label,stamp);
+  const status=document.createElement('td');status.append(badge(stage.status));const elapsed=document.createElement('td');elapsed.className='duration';elapsed.dataset.started=stage.started_utc;elapsed.dataset.finished=stage.finished_utc||'';
+  const artifact=document.createElement('td');const link=stage.status==='RUNNING'?null:fileLink(stage.artifact_path,'파일');if(link)artifact.append(link);else artifact.textContent='—';row.append(main,status,elapsed,artifact);recordRoot.append(row);
+}
+if(!stages.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=4;cell.className='empty';cell.textContent='실행 준비 중입니다.';row.append(cell);recordRoot.append(row);}
+if(state.error){const error=document.getElementById('run-error');error.hidden=false;error.textContent=state.error;}
+if(state.status==='COMPLETED'){const link=fileLink(state.final_path,'최종 결과 열기');if(link)document.getElementById('final-link').append(link);}
+function tick(){const end=running?Date.now():new Date(state.updated_utc||state.started_utc).getTime();text('elapsed',duration((end-new Date(state.started_utc).getTime())/1000));for(const cell of document.querySelectorAll('.duration')){const finish=cell.dataset.finished?new Date(cell.dataset.finished).getTime():end;cell.textContent=duration((finish-new Date(cell.dataset.started).getTime())/1000);}const age=Math.max(0,(Date.now()-new Date(state.updated_utc||state.started_utc).getTime())/1000);const stale=document.getElementById('stale');stale.hidden=!running||age<15;if(!stale.hidden)stale.textContent=`마지막 상태 수신이 ${duration(age)} 전입니다. 현재 표시된 내용은 마지막으로 확인된 단계입니다.`;}
+tick();setInterval(tick,1000);
+let timer=null,paused=location.hash==='#paused';const toggle=document.getElementById('refresh-toggle');
+function schedule(){clearTimeout(timer);toggle.setAttribute('aria-pressed',String(!paused));toggle.textContent=paused?'자동 갱신 일시정지':'자동 갱신 켜짐';if(running&&!paused)timer=setTimeout(()=>location.reload(),3000);}
+toggle.hidden=!running;toggle.addEventListener('click',()=>{paused=!paused;history.replaceState(null,'',paused?'#paused':location.pathname+location.search);schedule();});schedule();
+</script>
+</body>
+</html>

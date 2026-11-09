@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "task_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["DONE", "PASS", "NEEDS_CHANGES", "BLOCKED", "NEEDS_APPROVAL"] },
+    "artifact_path": { "type": "string" },
+    "summary": { "type": "string" }
+  },
+  "required": ["task_id", "status", "artifact_path", "summary"]
+}
