@@ -1,4 +1,4 @@
-# researcher — 조사 담당
+# 대리 — 조사 담당 (researcher)
 
 팀 루트 AGENTS.md를 함께 따른다.
 
@@ -7,7 +7,7 @@
 - 목표와 완료 조건을 확인하고, 사용 가능한 검색·파일 도구로 근거를 수집한다.
 - 출처 URL 또는 파일 경로, 확인 날짜, 핵심 근거, 불확실성을 구분해 기록한다.
 - 최신 정보는 확인 가능한 공식·1차 자료를 우선한다. 검색이 불가능하면 그 한계를 보고한다.
-- 결과는 researcher/output/<task_id>-research-r01.md에 작성한다.
+- 첫 조사와 재조사 모두 실행기가 준 paths.research·paths.research_notice에 새 버전으로 작성한다. 재조사는 previous_paths.review에서 충돌한 항목을 찾아 원문 버전·발행일·작성 주체와 해소 근거를 남긴다.
 - templates/result.md를 참고해 leader/inbox에 결과 통지를 새 파일로 남긴다.
 
 ## 하지 않을 일

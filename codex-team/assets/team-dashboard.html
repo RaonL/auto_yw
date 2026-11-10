@@ -18,6 +18,7 @@
 <header class="top"><div><p class="eyebrow">CODEX TEAM · 실행 기록</p><h1>팀 업무 진행 현황</h1><p id="task-preview" class="subtitle"></p></div><div class="controls"><span id="overall-status" class="badge"></span><button id="refresh-toggle" type="button" aria-pressed="true">자동 갱신 켜짐</button></div></header>
 <div class="summary"><div class="metric"><small>현재 단계</small><strong id="current-phase"></strong></div><div class="metric"><small>전체 경과</small><strong id="elapsed"></strong></div><div class="metric"><small>완료된 단계</small><strong id="completed-count"></strong></div><div class="metric"><small>마지막 상태 수신 · 한국시간</small><strong id="last-update"></strong></div></div>
 <div id="stale" class="notice" role="status" hidden></div><div id="run-error" class="notice error" hidden></div>
+<p id="review-status" class="small"></p><p id="handoff" class="small"></p>
 <section aria-labelledby="roles-heading"><h2 id="roles-heading">역할별 상태</h2><div id="roles" class="role-grid"></div></section>
 <section class="section" aria-labelledby="records-heading"><div class="section-head"><h2 id="records-heading">실행 단계 기록</h2><span id="revision" class="small"></span></div><div class="table-wrap"><table><thead><tr><th scope="col">담당 · 수행 단계</th><th scope="col">상태</th><th scope="col">소요</th><th scope="col">산출물</th></tr></thead><tbody id="records"></tbody></table></div></section>
 <section class="section" aria-labelledby="report-heading"><div class="report"><h2 id="report-heading">최근 완료 보고</h2><p id="last-report"></p><p id="final-link"></p></div></section>
@@ -29,8 +30,10 @@
 const state = JSON.parse(document.getElementById('team-state').textContent);
 const stages = Array.isArray(state.stages) ? state.stages : [];
 const running = state.status === 'RUNNING';
-const names = {leader:'팀장',researcher:'조사 담당',writer:'작성 담당',reviewer:'검수 담당'};
+const names = {leader:'팀장',researcher:'대리',writer:'과장',reviewer:'차장'};
 const phases = {leader_plan:'요청 분석·계획·조사 지시',research:'자료 조사·근거 정리',leader_write:'조사 결과 확인·작성 지시',leader_revise:'검수 결과 확인·수정 지시',write:'결과물 작성·자체 확인',leader_review:'초안 확인·검수 지시',review:'출처·내용·요구사항 검수',leader_finalize:'검수 결과 확인·최종 취합'};
+phases.leader_research='원자료 재조사 지시';
+phases.light_write='제공 자료 확인·간편 작성';
 const labels = {RUNNING:'진행 중',DONE:'단계 완료',PASS:'검수 PASS',COMPLETED:'전체 완료',BLOCKED:'자료·판단 필요',NEEDS_APPROVAL:'승인 필요',NEEDS_CHANGES:'수정 요청',FAILED:'실행 오류',CANCELLED:'중단'};
 const classes = {RUNNING:'active',DONE:'ok',PASS:'ok',COMPLETED:'ok',BLOCKED:'warn',NEEDS_APPROVAL:'warn',NEEDS_CHANGES:'warn',FAILED:'bad',CANCELLED:'warn'};
 const active = running ? [...stages].reverse().find(stage => stage.status === 'RUNNING') : null;
@@ -47,6 +50,13 @@ text('completed-count',`${stages.filter(stage=>stage.status==='DONE'||stage.stat
 text('last-update',time(state.updated_utc||state.started_utc));
 text('revision',`수정 버전 r${String(state.revision||1).padStart(2,'0')}`);
 text('last-report',state.message||'완료된 단계의 보고가 아직 없습니다.');
+const lastReview=[...stages].reverse().find(stage=>stage.kind==='review' && ['PASS','NEEDS_CHANGES','BLOCKED','NEEDS_APPROVAL'].includes(stage.status));
+text('review-status',state.mode==='Light'?'간편 업무 · 독립 검수 생략':lastReview?`최근 검수 r${lastReview.revision} · ${labels[lastReview.status]}`:'독립 검수 대기');
+const handoff=[...stages].reverse().find(stage=>stage.next_owner);
+if(handoff && state.status!=='COMPLETED'){
+  const owner=names[handoff.next_owner]||'사용자';
+  text('handoff',`r${handoff.revision} 후속 담당 · ${owner} · ${handoff.reason||''}`);
+}
 const roleRoot=document.getElementById('roles');
 for(const role of ['leader','researcher','writer','reviewer']){
   const history=stages.filter(stage=>stage.role===role),latest=history[history.length-1],isActive=!!active&&active.role===role;

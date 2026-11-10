@@ -142,6 +142,14 @@ test('artifact paths encode filename punctuation and reject traversal', () => {
   assert.equal(ui.nodes.get('records').children[0].children[3].children.length, 0);
 });
 
+test('review handoff shows the recorded owner and reason; light summaries show no independent review', () => {
+  const ui = render(state({ stages: [stage({ kind: 'review', role: 'reviewer', status: 'NEEDS_CHANGES', next_owner: 'researcher', reason: '지원 기간 불일치' })] }));
+  assert.match(ui.nodes.get('handoff').textContent, /대리.*지원 기간 불일치/);
+  assert.match(ui.nodes.get('review-status').textContent, /수정 요청/);
+  const light = render(state({ mode: 'Light', status: 'COMPLETED', stages: [stage({ kind: 'light_write', status: 'DONE' })] }));
+  assert.match(light.nodes.get('review-status').textContent, /독립 검수 생략/);
+});
+
 test('heartbeat becomes stale after fifteen seconds and UTC time renders in Korea', () => {
   const ui = render(state());
   assert.equal(ui.nodes.get('last-update').textContent, '22:01:00');

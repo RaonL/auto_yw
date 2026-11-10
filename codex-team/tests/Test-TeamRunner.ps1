@@ -51,12 +51,48 @@ Test-Case 'review requests one correction and passes' {
     $reviewers = @($run.stages | Where-Object role -eq 'reviewer' | ForEach-Object session_id | Select-Object -Unique)
     Assert-True ($reviewers.Count -eq 2) 'Re-review must use an independent new session'
 }
+foreach ($fault in @('계산 오류','원자료 충돌')) {
+    Test-Case "견적 수정 경로: $fault" {
+        $fixture = New-Fixture $fault
+        $conflict = $fault -eq '원자료 충돌'
+        $draftTotal = if ($conflict) { 30000 } else { 20000 }
+        $annexMonths = if ($conflict) { 24 } else { 12 }
+        Set-Content (Join-Path $fixture 'quote.csv') "quantity,unit_price,months,draft_total`n3,10000,12,$draftTotal"
+        Set-Content (Join-Path $fixture 'annex.csv') "months`n$annexMonths"
+        Set-Content (Join-Path $fixture 'signed-amendment.txt') '최종 지원 기간 12개월, 이전 부속서 대체'
+        $run = Invoke-TeamWorkflow -TeamRoot $fixture -Task '견적 합계와 지원 조건을 검토해줘' -Offline -CliCommand @($shellPath,'-NoProfile','-File',$fakePath,'-Scenario','quote')
+        Assert-True ($run.status -eq 'COMPLETED' -and $run.revision -eq 2) "Correction failed: $($run.error)"
+        $review = $run.stages[5]
+        $owner = if ($conflict) { 'researcher' } else { 'writer' }
+        Assert-True ($review.status -eq 'NEEDS_CHANGES' -and $review.next_owner -eq $owner) 'Wrong correction owner'
+        $workers = @($run.stages | Where-Object { $_.revision -eq 2 -and $_.role -ne 'leader' } | ForEach-Object role)
+        $expected = if ($conflict) { 'researcher,writer,reviewer' } else { 'writer,reviewer' }
+        Assert-True (($workers -join ',') -eq $expected) 'Unexpected corrective stage order'
+        $final = Get-Content -Raw (Join-Path $fixture $run.final_path)
+        Assert-True ($final -match '(?m)^합계: 30000$') 'Wrong final amount'
+        if ($conflict) {
+            $research = @($run.stages | Where-Object kind -eq 'research')
+            Assert-True ($research[0].artifact_path -ne $research[1].artifact_path) 'Original research overwritten'
+            Assert-True ($final.Contains('서명 정정본: 최종 지원 기간 12개월')) 'Writer did not consume new evidence'
+        }
+        Write-Host "검수 원인 $($review.cause) → $($workers -join ' → ') → $($run.stages[-2].status)"
+    }.GetNewClosure()
+}
+Test-Case 'user decision stops without publishing final result' {
+    $run = Run-Scenario 'choice' 'needs-choice'
+    Assert-True ($run.status -eq 'BLOCKED' -and $run.stages[-1].next_owner -eq 'user' -and $run.message.Contains('어느 조건') -and -not $run.final_path) 'Missing user handoff'
+}
+Test-Case 'light summary runs only the writer without an independent PASS' {
+    $run = Invoke-TeamWorkflow -TeamRoot (New-Fixture 'light') -Task '간단 내부 요약' -Mode Light -CliCommand @($shellPath,'-NoProfile','-File',$fakePath)
+    Assert-True ($run.status -eq 'COMPLETED' -and $run.stages.Count -eq 1 -and $run.stages[0].kind -eq 'light_write') 'Unexpected light workflow'
+    Assert-True ($run.stages[0].status -eq 'DONE' -and (Test-Path (Join-Path $run.team_root $run.final_path))) 'Invalid light output'
+}
 Test-Case 'review limit stops instead of looping' {
     $run = Run-Scenario 'always-revise' 'always-revise'
     Assert-True ($run.status -eq 'NEEDS_CHANGES' -and $run.revision -eq 2) 'Revision limit not enforced'
     Assert-True (-not $run.final_path) 'Failed review produced a final artifact'
 }
-foreach ($scenario in @('bad-json','wrong-id','wrong-path','missing-artifact','exit-error','mutate-draft','final-mutate-draft','mixed-verdict')) {
+foreach ($scenario in @('bad-json','wrong-id','wrong-path','missing-artifact','exit-error','mutate-draft','final-mutate-draft','mixed-verdict','unchecked-pass')) {
     Test-Case "reject: $scenario" {
         $run = Run-Scenario $scenario $scenario
         Assert-True ($run.status -eq 'FAILED') "Expected FAILED for $scenario"
